@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Hipotecario Tingle</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, Helvetica, sans-serif; background: #f6f3ee; color: #12121e; }
+
+.top { background: #12121e; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-family: Georgia, serif; font-size: 1.1rem; color: #fff; font-weight: bold; }
+.logo b { color: #c49a4a; font-weight: bold; }
+.cnv { font-size: .6rem; color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.2); padding: 4px 10px; border-radius: 20px; }
+
+.hero { background: #12121e; padding: 0 20px 22px; }
+.hero h1 { font-family: Georgia, serif; font-size: 1.5rem; color: #fff; line-height: 1.2; margin-bottom: 5px; }
+.hero p { font-size: .75rem; color: rgba(255,255,255,.4); }
+
+.pills { background: #12121e; display: flex; gap: 8px; padding: 0 16px 18px; overflow-x: auto; }
+.pill { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 10px; padding: 9px 13px; min-width: 90px; flex-shrink: 0; }
+.pill-l { font-size: .55rem; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.4); }
+.pill-v { font-family: Georgia, serif; font-size: 1rem; color: #fff; font-weight: bold; margin-top: 2px; }
+.pill-s { font-size: .55rem; color: rgba(255,255,255,.3); }
+.dark-end { height: 4px; background: #12121e; }
+
+.wrap { padding: 0 12px; margin-top: 16px; }
+
+.card { background: #fff; border-radius: 16px; border: 1px solid #e4dfd6; margin-bottom: 12px; overflow: hidden; }
+.card-h { padding: 13px 15px; border-bottom: 1px solid #e4dfd6; display: flex; align-items: center; gap: 8px; }
+.num { background: #12121e; color: #fff; width: 20px; height: 20px; border-radius: 50%; font-size: .6rem; font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.card-t { font-family: Georgia, serif; font-size: .9rem; font-weight: bold; }
+.card-b { padding: 13px 15px; }
+
+/* BANCO BUTTONS — pure HTML buttons, simplest possible */
+.banco {
+  display: block;
+  width: 100%;
+  background: #f6f3ee;
+  border: 2px solid #e4dfd6;
+  border-radius: 12px;
+  padding: 13px 14px;
+  margin-bottom: 9px;
+  text-align: left;
+  cursor: pointer;
+  font-family: -apple-system, Helvetica, sans-serif;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.banco:last-child { margin-bottom: 0; }
+.banco.on { background: #e6f4f2; border-color: #1e7a6e; }
+.banco.gold { border-color: #c49a4a; }
+.banco-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.banco-info { flex: 1; }
+.banco-tag { display: inline-block; font-size: .55rem; text-transform: uppercase; letter-spacing: 1px; background: #c49a4a; color: #fff; padding: 2px 7px; border-radius: 5px; font-weight: bold; margin-bottom: 4px; }
+.banco-name { font-family: Georgia, serif; font-size: .95rem; font-weight: bold; color: #12121e; }
+.banco-cond { font-size: .68rem; color: #5a5a7a; margin-top: 2px; }
+.banco-chips { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
+.chip { font-size: .55rem; text-transform: uppercase; padding: 2px 7px; border-radius: 7px; border: 1px solid #e4dfd6; color: #5a5a7a; background: #fff; }
+.chip-t { background: #e6f4f2; border-color: #1e7a6e; color: #1e7a6e; }
+.chip-g { background: #fdf6e8; border-color: #c49a4a; color: #c49a4a; }
+.banco-tna { text-align: right; margin-left: 10px; }
+.tna-big { font-family: Georgia, serif; font-size: 1.35rem; font-weight: bold; color: #1e7a6e; }
+.tna-lbl { font-size: .55rem; color: #5a5a7a; }
+.tna-chk { font-size: .8rem; color: #1e7a6e; font-weight: bold; }
+
+/* SLIDERS */
+.sl-block { margin-bottom: 16px; }
+.sl-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+.sl-lbl { font-size: .68rem; text-transform: uppercase; letter-spacing: 1px; color: #5a5a7a; }
+.sl-val { font-family: Georgia, serif; font-size: 1.25rem; font-weight: bold; }
+input[type=range] { -webkit-appearance: none; width: 100%; height: 5px; background: #ddd; border-radius: 3px; border: none; outline: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #1e7a6e; border: 3px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,.2); }
+.sl-ends { display: flex; justify-content: space-between; font-size: .6rem; color: #5a5a7a; margin-top: 3px; }
+
+/* CUOTA RESULT */
+.result-box { background: #12121e; border-radius: 16px; padding: 18px; color: #fff; margin-bottom: 12px; }
+.res-lbl { font-size: .6rem; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,.4); margin-bottom: 4px; }
+.res-val { font-family: Georgia, serif; font-size: 1.9rem; font-weight: bold; line-height: 1; }
+.res-sub { font-size: .7rem; color: rgba(255,255,255,.4); margin-top: 4px; }
+.res-div { height: 1px; background: rgba(255,255,255,.1); margin: 12px 0; }
+.res-row { display: flex; justify-content: space-between; font-size: .78rem; color: rgba(255,255,255,.5); padding: 3px 0; }
+.res-row span:last-child { color: #fff; }
+
+/* COMP */
+.comp { border: 1px solid #e4dfd6; border-radius: 10px; padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.comp:last-child { margin-bottom: 0; }
+.comp.hi { background: #e6f4f2; border-color: #1e7a6e; }
+.comp-n { font-size: .83rem; font-weight: 500; }
+.comp-s { font-size: .65rem; color: #5a5a7a; margin-top: 1px; }
+.comp-c { font-family: Georgia, serif; font-size: .95rem; font-weight: bold; text-align: right; }
+.comp-u { font-size: .62rem; color: #5a5a7a; text-align: right; }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+.dg { background: #1f8c5a; } .dy { background: #e0a800; } .dr { background: #c0453b; }
+
+/* INV */
+.inv2 { display: flex; border-radius: 10px; border: 1px solid #e4dfd6; overflow: hidden; margin-bottom: 14px; }
+.inv2-h { flex: 1; padding: 12px; text-align: center; }
+.inv2-h:first-child { border-right: 1px solid #e4dfd6; }
+.i2l { font-size: .55rem; text-transform: uppercase; letter-spacing: 1px; color: #5a5a7a; margin-bottom: 3px; }
+.i2v { font-family: Georgia, serif; font-size: .95rem; font-weight: bold; }
+.irow { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e4dfd6; }
+.irow:last-child { border-bottom: none; }
+.irl { font-size: .78rem; color: #5a5a7a; }
+.irv { font-family: Georgia, serif; font-size: .85rem; font-weight: bold; }
+
+.bb { border-radius: 12px; padding: 14px; text-align: center; margin: 12px 0; }
+.bb-g { background: #e8f7ef; } .bb-y { background: #fdf6e8; } .bb-r { background: #fdf0ef; }
+.bb-t { font-size: .62rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+.tg { color: #1f8c5a; } .ty { color: #9a6f00; } .tr { color: #c0453b; }
+.bb-v { font-family: Georgia, serif; font-size: 1.4rem; font-weight: bold; }
+.vg { color: #1f8c5a; } .vy { color: #c8860a; } .vr { color: #c0453b; }
+.bb-s { font-size: .68rem; margin-top: 3px; opacity: .7; }
+
+.alerta { border-radius: 10px; padding: 11px 13px; font-size: .73rem; line-height: 1.5; margin-top: 10px; }
+.al-y { background: #fdf6e8; border: 1px solid #f0d080; color: #7a5800; }
+.al-r { background: #fdf0ef; border: 1px solid #f0b0a8; color: #7a1f1f; }
+.al-g { background: #e8f7ef; border: 1px solid #90c8a8; color: #1a5c3a; }
+
+.req { display: flex; gap: 10px; align-items: flex-start; padding: 11px 13px; background: #f6f3ee; border-radius: 10px; border: 1px solid #e4dfd6; margin-bottom: 9px; }
+.req:last-child { margin-bottom: 0; }
+.req-t { font-size: .78rem; font-weight: 500; margin-bottom: 2px; }
+.req-d { font-size: .7rem; color: #5a5a7a; line-height: 1.4; }
+
+.foot { text-align: center; padding: 24px 16px; font-size: .62rem; color: #5a5a7a; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="logo">Tingle <b>Inversiones</b></div>
+  <div class="cnv">CNV #1780</div>
+</div>
+
+<div class="hero">
+  <div style="height:6px"></div>
+  <h1>Simulador<br>Hipotecario UVA</h1>
+  <p>Ampliacion de vivienda - USD 150.000</p>
+</div>
+
+<div class="pills">
+  <div class="pill"><div class="pill-l">Dolar MEP</div><div class="pill-v">$1.435</div><div class="pill-s">26 Feb 2026</div></div>
+  <div class="pill"><div class="pill-l">Valor UVA</div><div class="pill-v">$1.787</div><div class="pill-s">BCRA Feb 2026</div></div>
+  <div class="pill"><div class="pill-l">Prestamo</div><div class="pill-v" id="h-pesos">$215M</div><div class="pill-s">USD a Pesos MEP</div></div>
+  <div class="pill"><div class="pill-l">Inflacion proy.</div><div class="pill-v">~21%</div><div class="pill-s">REM 2026</div></div>
+</div>
+<div class="dark-end"></div>
+
+<div class="wrap">
+
+  <!-- BANCOS — hardcoded in HTML, no JS needed to render -->
+  <div class="card">
+    <div class="card-h"><div class="num">1</div><div class="card-t">Elegi el banco</div></div>
+    <div class="card-b">
+
+      <button class="banco gold on" id="btn-bna" onclick="selBanco('bna');return false;">
+        <div class="banco-top">
+          <div class="banco-info">
+            <div class="banco-tag">Menor tasa del mercado</div>
+            <div class="banco-name">Banco Nacion</div>
+            <div class="banco-cond">Clientes BNA</div>
+            <div class="banco-chips">
+              <span class="chip chip-t">30 anos max.</span>
+              <span class="chip chip-g">Financia 75%</span>
+            </div>
+          </div>
+          <div class="banco-tna">
+            <div class="tna-big">6%</div>
+            <div class="tna-lbl">TNA+UVA</div>
+            <div class="tna-chk" id="chk-bna">✓</div>
+          </div>
+        </div>
+      </button>
+
+      <button class="banco" id="btn-ciudad" onclick="selBanco('ciudad');return false;">
+        <div class="banco-top">
+          <div class="banco-info">
+            <div class="banco-name">Banco Ciudad</div>
+            <div class="banco-cond">Cuenta sueldo</div>
+            <div class="banco-chips">
+              <span class="chip chip-t">20 anos max.</span>
+              <span class="chip chip-g">Financia 70%</span>
+            </div>
+          </div>
+          <div class="banco-tna">
+            <div class="tna-big">9%</div>
+            <div class="tna-lbl">TNA+UVA</div>
+            <div class="tna-chk" id="chk-ciudad" style="display:none">✓</div>
+          </div>
+        </div>
+      </button>
+
+      <button class="banco" id="btn-santander" onclick="selBanco('santander');return false;">
+        <div class="banco-top">
+          <div class="banco-info">
+            <div class="banco-name">Santander</div>
+            <div class="banco-cond">Acreditacion haberes</div>
+            <div class="banco-chips">
+              <span class="chip chip-t">20 anos max.</span>
+              <span class="chip chip-g">Financia 80%</span>
+            </div>
+          </div>
+          <div class="banco-tna">
+            <div class="tna-big">15%</div>
+            <div class="tna-lbl">TNA+UVA</div>
+            <div class="tna-chk" id="chk-santander" style="display:none">✓</div>
+          </div>
+        </div>
+      </button>
+
+      <button class="banco" id="btn-bbva" onclick="selBanco('bbva');return false;">
+        <div class="banco-top">
+          <div class="banco-info">
+            <div class="banco-name">BBVA</div>
+            <div class="banco-cond">Mercado abierto</div>
+            <div class="banco-chips">
+              <span class="chip chip-t">30 anos max.</span>
+              <span class="chip chip-g">Financia 80%</span>
+            </div>
+          </div>
+          <div class="banco-tna">
+            <div class="tna-big">17%</div>
+            <div class="tna-lbl">TNA+UVA</div>
+            <div class="tna-chk" id="chk-bbva" style="display:none">✓</div>
+          </div>
+        </div>
+      </button>
+
+      <button class="banco" id="btn-galicia" onclick="selBanco('galicia');return false;">
+        <div class="banco-top">
+          <div class="banco-info">
+            <div class="banco-name">Banco Galicia</div>
+            <div class="banco-cond">Solo clientes</div>
+            <div class="banco-chips">
+              <span class="chip chip-t">20 anos max.</span>
+              <span class="chip chip-g">Financia 75%</span>
+            </div>
+          </div>
+          <div class="banco-tna">
+            <div class="tna-big">15%</div>
+            <div class="tna-lbl">TNA+UVA</div>
+            <div class="tna-chk" id="chk-galicia" style="display:none">✓</div>
+          </div>
+        </div>
+      </button>
+
+      <button class="banco" id="btn-macro" onclick="selBanco('macro');return false;">
+        <div class="banco-top">
+          <div class="banco-info">
+            <div class="banco-name">Banco Macro</div>
+            <div class="banco-cond">Clientes (30% cuota/ingreso)</div>
+            <div class="banco-chips">
+              <span class="chip chip-t">20 anos max.</span>
+              <span class="chip chip-g">Financia 75%</span>
+            </div>
+          </div>
+          <div class="banco-tna">
+            <div class="tna-big">15%</div>
+            <div class="tna-lbl">TNA+UVA</div>
+            <div class="tna-chk" id="chk-macro" style="display:none">✓</div>
+          </div>
+        </div>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- PARAMETROS -->
+  <div class="card">
+    <div class="card-h"><div class="num">2</div><div class="card-t">Parametros del prestamo</div></div>
+    <div class="card-b">
+      <div class="sl-block">
+        <div class="sl-row"><div class="sl-lbl">Monto</div><div class="sl-val">USD <span id="v-amount">150.000</span></div></div>
+        <input type="range" id="sl-amount" min="50000" max="200000" step="5000" value="150000" oninput="calcular()">
+        <div class="sl-ends"><span>USD 50K</span><span>USD 200K</span></div>
+      </div>
+      <div class="sl-block">
+        <div class="sl-row"><div class="sl-lbl">Plazo</div><div class="sl-val"><span id="v-plazo">20</span> anos</div></div>
+        <input type="range" id="sl-plazo" min="5" max="30" step="5" value="20" oninput="calcular()">
+        <div class="sl-ends"><span>5 anos</span><span>30 anos</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="result-box">
+    <div class="res-lbl">Cuota mensual inicial estimada</div>
+    <div class="res-val" id="r-cuota">-</div>
+    <div class="res-sub" id="r-sub">Selecciona un banco</div>
+    <div class="res-div"></div>
+    <div class="res-row"><span>Equiv. en USD</span><span id="r-usd">-</span></div>
+    <div class="res-row"><span>Ingreso min. req.</span><span id="r-ingreso">-</span></div>
+    <div class="res-row"><span>TNA aplicada</span><span id="r-tna">-</span></div>
+    <div class="res-row"><span>Plazo efectivo</span><span id="r-plazo">-</span></div>
+  </div>
+
+  <!-- COMPARATIVA -->
+  <div class="card">
+    <div class="card-h"><div class="num">4</div><div class="card-t">Comparativa de bancos</div></div>
+    <div class="card-b">
+      <div id="comp-list"></div>
+      <div class="alerta al-y" style="margin-top:12px"><b>UVA sube con inflacion.</b> La cuota inicial esta en pesos a la UVA de hoy. Con ~21% de inflacion proyectada para 2026, la cuota en pesos sube proporcionalmente cada ano.</div>
+    </div>
+  </div>
+
+  <!-- ESTRATEGIA -->
+  <div class="card">
+    <div class="card-h"><div class="num">5</div><div class="card-t">Estrategia: Obra + Renta Fija</div></div>
+    <div class="card-b">
+      <p style="font-size:.75rem;color:#5a5a7a;margin-bottom:12px;line-height:1.5">Dividimos el credito entre construccion e inversion en ONs corporativas al 8% anual en USD. La renta mensual busca cubrir la cuota hipotecaria.</p>
+      <div class="inv2">
+        <div class="inv2-h"><div class="i2l">Construccion</div><div class="i2v" id="inv-c">USD 100.000</div></div>
+        <div class="inv2-h"><div class="i2l">Renta fija</div><div class="i2v" id="inv-k">USD 50.000</div></div>
+      </div>
+      <div class="sl-block">
+        <div class="sl-row"><div class="sl-lbl">Capital en renta fija</div><div class="sl-val" style="font-size:.95rem">USD <span id="v-cap">50.000</span></div></div>
+        <input type="range" id="sl-cap" min="10000" max="140000" step="5000" value="50000" oninput="calcularInv()">
+        <div class="sl-ends"><span>USD 10K</span><span>USD 140K</span></div>
+      </div>
+      <div style="margin:14px 0">
+        <div class="irow"><span class="irl">Renta anual (8%)</span><span class="irv" id="inv-ra">-</span></div>
+        <div class="irow"><span class="irl">Renta mensual USD</span><span class="irv" id="inv-rm">-</span></div>
+        <div class="irow"><span class="irl">Renta mensual $</span><span class="irv" id="inv-rp">-</span></div>
+      </div>
+      <div id="balance-box"></div>
+      <div>
+        <div class="irow"><span class="irl">Cuota hipotecaria</span><span class="irv" id="b-cuota">-</span></div>
+        <div class="irow"><span class="irl">Renta mensual</span><span class="irv" id="b-renta">-</span></div>
+        <div class="irow"><span class="irl">Cobertura</span><span class="irv" id="b-cob">-</span></div>
+      </div>
+      <div id="inv-alert" class="alerta al-y" style="margin-top:12px">-</div>
+      <div style="margin-top:16px;padding-top:13px;border-top:1px solid #e4dfd6">
+        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:#5a5a7a;margin-bottom:9px">Instrumento sugerido</div>
+        <div class="irow"><span class="irl">Tipo</span><span style="font-size:.8rem;font-weight:500">ON Corporativa USD</span></div>
+        <div class="irow"><span class="irl">Tasa objetivo</span><span style="font-size:.8rem">8% anual USD</span></div>
+        <div class="irow"><span class="irl">Emisores ref.</span><span style="font-size:.8rem">YPF, Pampa, TGS, Arcor</span></div>
+        <div class="irow"><span class="irl">Custodia</span><span style="font-size:.8rem">Balanz Capital</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REQUISITOS -->
+  <div class="card">
+    <div class="card-h"><div class="num">6</div><div class="card-t">Requisitos del mercado</div></div>
+    <div class="card-b">
+      <div class="req"><div style="font-size:1.1rem;flex-shrink:0">📄</div><div><div class="req-t">Antiguedad laboral</div><div class="req-d">Dependencia: min. 1 año. Autonomos y Monotrib.: 2 anos en actividad.</div></div></div>
+      <div class="req"><div style="font-size:1.1rem;flex-shrink:0">🏠</div><div><div class="req-t">Ahorro previo</div><div class="req-d">Al menos 20% del valor de la propiedad mas 10% para gastos de escrituracion.</div></div></div>
+      <div class="req"><div style="font-size:1.1rem;flex-shrink:0">💰</div><div><div class="req-t">Cuota / Ingreso</div><div class="req-d">La cuota no puede superar el 25% del ingreso neto. Se pueden sumar ingresos familiares.</div></div></div>
+      <div class="req"><div style="font-size:1.1rem;flex-shrink:0">⭐</div><div><div class="req-t">Scoring crediticio</div><div class="req-d">Banco Nacion exige 900 puntos. Bancos privados: 700-800. Sin deudas impagas.</div></div></div>
+      <div class="req"><div style="font-size:1.1rem;flex-shrink:0">🔧</div><div><div class="req-t">Destino ampliacion</div><div class="req-d">Plazos mas cortos (hasta 10 anos en algunos bancos). Financia hasta 50% del valor tasado.</div></div></div>
+      <div class="alerta al-r" style="margin-top:10px"><b>Credito de ampliacion:</b> Plazos y porcentaje financiado son menores que en compra. Verificar con cada banco la disponibilidad para ampliacion especificamente.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot">
+  Tingle Inversiones - CNV Reg. #1780 - Neuquen, Argentina<br>
+  Simulacion 27/02/2026 - Solo orientativa, no constituye oferta comercial
+</div>
+
+<script>
+var MEP = 1435;
+var UVA = 1787;
+var TOTAL = 150000;
+
+var bancoData = {
+  bna:       {tna:6,  max:30},
+  ciudad:    {tna:9,  max:20},
+  santander: {tna:15, max:20},
+  bbva:      {tna:17, max:30},
+  galicia:   {tna:15, max:20},
+  macro:     {tna:15, max:20}
+};
+
+var bancoNames = {
+  bna:"Banco Nacion", ciudad:"Banco Ciudad", santander:"Santander",
+  bbva:"BBVA", galicia:"Banco Galicia", macro:"Banco Macro"
+};
+
+var bancoIds = ["bna","ciudad","santander","bbva","galicia","macro"];
+var selId = "bna";
+var cuotaPesos = 0;
+
+function fmt(n) {
+  var s = "" + Math.round(n);
+  var out = "";
+  var c = 0;
+  for (var i = s.length - 1; i >= 0; i--) {
+    if (c > 0 && c % 3 === 0) out = "." + out;
+    out = s[i] + out;
+    c++;
+  }
+  return out;
+}
+function fP(n) {
+  if (n >= 1000000) return "$" + (n/1000000).toFixed(2).replace(".",",") + "M";
+  return "$" + fmt(n);
+}
+function fU(n) { return "USD " + fmt(n); }
+
+function cuotaFrances(p, tna, m) {
+  var r = tna / 12 / 100;
+  if (r === 0) return p / m;
+  var x = Math.pow(1 + r, m);
+  return p * r * x / (x - 1);
+}
+
+function selBanco(id) {
+  var prev = document.getElementById("btn-" + selId);
+  if (prev) { prev.className = "banco"; }
+  var prevChk = document.getElementById("chk-" + selId);
+  if (prevChk) { prevChk.style.display = "none"; }
+
+  selId = id;
+
+  var cur = document.getElementById("btn-" + id);
+  if (cur) { cur.className = id === "bna" ? "banco gold on" : "banco on"; }
+  var curChk = document.getElementById("chk-" + id);
+  if (curChk) { curChk.style.display = "block"; }
+
+  calcular();
+}
+
+function calcular() {
+  var b = bancoData[selId];
+  var usd = parseInt(document.getElementById("sl-amount").value, 10);
+  var plazo = parseInt(document.getElementById("sl-plazo").value, 10);
+  var ef = plazo < b.max ? plazo : b.max;
+
+  document.getElementById("v-amount").textContent = fmt(usd);
+  document.getElementById("v-plazo").textContent = plazo;
+  document.getElementById("h-pesos").textContent = "$" + Math.round(usd * MEP / 1000000) + "M";
+
+  var lUVAs = (usd * MEP) / UVA;
+  var cUVAs = cuotaFrances(lUVAs, b.tna, ef * 12);
+  cuotaPesos = cUVAs * UVA;
+
+  document.getElementById("r-cuota").textContent = fP(cuotaPesos);
+  document.getElementById("r-sub").textContent = bancoNames[selId] + " - TNA " + b.tna + "% + UVA";
+  document.getElementById("r-usd").textContent = fU(cuotaPesos / MEP);
+  document.getElementById("r-ingreso").textContent = fP(cuotaPesos / 0.25) + "/mes";
+  document.getElementById("r-tna").textContent = b.tna + "% + UVA";
+  document.getElementById("r-plazo").textContent = ef + (ef < plazo ? " anos (max banco)" : " anos");
+
+  var ch = "";
+  for (var i = 0; i < bancoIds.length; i++) {
+    var bid = bancoIds[i];
+    var bx = bancoData[bid];
+    var pl2 = (plazo < bx.max ? plazo : bx.max) * 12;
+    var cU2 = cuotaFrances((usd * MEP) / UVA, bx.tna, pl2);
+    var cP2 = cU2 * UVA;
+    var dc = bx.tna <= 6 ? "dg" : bx.tna <= 12 ? "dy" : "dr";
+    ch += '<div class="comp' + (bid === selId ? " hi" : "") + '">';
+    ch += '<div style="flex:1"><div class="comp-n"><span class="dot ' + dc + '"></span>' + bancoNames[bid] + '</div>';
+    ch += '<div class="comp-s">' + bx.tna + '% TNA - ' + (plazo < bx.max ? plazo : bx.max) + ' anos</div></div>';
+    ch += '<div><div class="comp-c">' + fP(cP2) + '</div><div class="comp-u">' + fU(cP2/MEP) + '/mes</div></div></div>';
+  }
+  document.getElementById("comp-list").innerHTML = ch;
+
+  calcularInv();
+}
+
+function calcularInv() {
+  var cap = parseInt(document.getElementById("sl-cap").value, 10);
+  var constr = TOTAL - cap;
+  var ra = cap * 0.08;
+  var rm = ra / 12;
+  var rp = rm * MEP;
+
+  document.getElementById("v-cap").textContent = fmt(cap);
+  document.getElementById("inv-c").textContent = fU(constr);
+  document.getElementById("inv-k").textContent = fU(cap);
+  document.getElementById("inv-ra").textContent = fU(ra);
+  document.getElementById("inv-rm").textContent = fU(rm);
+  document.getElementById("inv-rp").textContent = fP(rp);
+  document.getElementById("b-cuota").textContent = fP(cuotaPesos);
+  document.getElementById("b-renta").textContent = fP(rp);
+
+  var bal = rp - cuotaPesos;
+  var cob = cuotaPesos > 0 ? Math.round(rp / cuotaPesos * 100) : 0;
+  document.getElementById("b-cob").textContent = cob + "%";
+
+  var bh, ah, ac;
+  if (bal >= 0) {
+    bh = '<div class="bb bb-g"><div class="bb-t tg">La renta CUBRE la cuota</div><div class="bb-v vg">' + fP(bal) + ' de excedente</div><div class="bb-s">Sobran ' + fU(bal/MEP) + '/mes para reinvertir</div></div>';
+    ah = "<b>Autosuficiente:</b> Con " + fU(cap) + " al 8%, la renta cubre la cuota y sobran " + fP(bal) + "/mes. Para construccion quedan " + fU(constr) + ".";
+    ac = "al-g";
+  } else if (cob >= 50) {
+    bh = '<div class="bb bb-y"><div class="bb-t ty">Renta cubre el ' + cob + '%</div><div class="bb-v vy">' + fP(-bal) + ' a completar</div><div class="bb-s">La cliente aporta ' + fU(-bal/MEP) + '/mes adicionales</div></div>';
+    ah = "<b>Cobertura parcial (" + cob + "%):</b> Diferencia de " + fU(-bal/MEP) + "/mes a cargo de la cliente. Subir el capital en renta para mejorar.";
+    ac = "al-y";
+  } else {
+    bh = '<div class="bb bb-r"><div class="bb-t tr">Renta cubre solo el ' + cob + '%</div><div class="bb-v vr">' + fP(-bal) + ' de diferencia</div><div class="bb-s">Subir capital en renta o elegir Banco Nacion</div></div>';
+    ah = "<b>Insuficiente (" + cob + "%):</b> Subir el capital en renta o elegir Banco Nacion (TNA 6%) para bajar la cuota.";
+    ac = "al-r";
+  }
+
+  document.getElementById("balance-box").innerHTML = bh;
+  var ia = document.getElementById("inv-alert");
+  ia.innerHTML = ah;
+  ia.className = "alerta " + ac;
+}
+
+calcular();
+</script>
+</body>
+</html>
